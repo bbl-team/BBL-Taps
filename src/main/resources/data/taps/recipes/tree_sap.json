@@ -2,12 +2,12 @@
   "type": "taps:sap_table",
   "ingredients": [
     {
-      "item": "minecraft:stick"
+      "item": "taps:wooden_sap_cast"
     }
   ],
   "duration": 100,
   "output": {
-    "item": "taps:oak_sap"
+    "item": "taps:tree_sap"
   },
   "connectedTapBlock": "minecraft:oak_log"
 }

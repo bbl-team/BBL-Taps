@@ -22,7 +22,24 @@ public class ModCreativeTab {
 
                 output.accept(ModBlocks.TAP.get());
                 output.accept(ModBlocks.SAP_TABLE.get());
-                output.accept(ModItems.OAK_SAP.get());
+                output.accept(ModItems.TREE_SAP.get());
+
+                output.accept(ModItems.BLACK_SAP.get());
+                output.accept(ModItems.WHITE_SAP.get());
+                output.accept(ModItems.YELLOW_SAP.get());
+                output.accept(ModItems.GREEN_SAP.get());
+                output.accept(ModItems.LIME_SAP.get());
+                output.accept(ModItems.ORANGE_SAP.get());
+                output.accept(ModItems.RED_SAP.get());
+                output.accept(ModItems.PINK_SAP.get());
+                output.accept(ModItems.MAGENTA_SAP.get());
+                output.accept(ModItems.PURPLE_SAP.get());
+                output.accept(ModItems.BROWN_SAP.get());
+                output.accept(ModItems.CYAN_SAP.get());
+                output.accept(ModItems.LIGHT_BLUE_SAP.get());
+                output.accept(ModItems.BLUE_SAP.get());
+                output.accept(ModItems.LIGHT_GRAY_SAP.get());
+                output.accept(ModItems.GRAY_SAP.get());
 
 
             }).build());

@@ -1,0 +1,13 @@
+{
+  "type": "taps:sap_table",
+  "ingredients": [
+    {
+      "item": "taps:wooden_sap_cast"
+    }
+  ],
+  "duration": 100,
+  "output": {
+    "item": "taps:white_sap"
+  },
+  "connectedTapBlock": "caveopolis:white_colored_log"
+}
