@@ -2,7 +2,7 @@
   "type": "taps:sap_table",
   "ingredients": [
     {
-        "item": "minecraft:stick"
+      "item": "minecraft:stick"
     }
   ],
   "duration": 50,

@@ -325,69 +325,65 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
         }
 
         assert level != null;
-        Optional<SapTableRecipe> match = level.getRecipeManager()
-                .getRecipeFor(SapTableRecipe.Type.INSTANCE, inventory, level);
-
-        List<SapTableRecipe> allRecipes = level.getRecipeManager().getAllRecipesFor(SapTableRecipe.Type.INSTANCE);
-
-        List<SapTableRecipe> matchingRecipes = allRecipes.stream()
-                .filter(recipe -> recipe.matches(inventory, level))
-                .collect(Collectors.toList());
-
         BlockPos blockPos = entity.worldPosition.above(1);
         BlockState blockAbove = level.getBlockState(blockPos);
-        Block logBlock = null;
 
-            for (SapTableRecipe logRecipeCheck : matchingRecipes) { //level.getRecipeManager().getRecipesFor(SapTableRecipe.Type.INSTANCE, inventory, level)) {
+        if (!blockAbove.is(ModBlocks.TAP.get()))
+            return false;
 
-                // Check Block / Fluid
-                logBlock = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(logRecipeCheck.getConnectedTapBlock()));
+        Block logBlock = getLogBlock(entity);
 
-                Direction direction = null;
+        Optional<SapTableRecipe> match = level.getRecipeManager()
+                .getAllRecipesFor(SapTableRecipe.Type.INSTANCE)
+                .stream()
+                .filter(e -> {
+                    return e.matches(inventory, level) && logBlock != null && logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(e.getConnectedTapBlock()));
+                })
+                .findAny();
 
-                if (blockAbove.is(ModBlocks.TAP.get())) {
-                    direction = blockAbove.getValue(BlockStateProperties.HORIZONTAL_FACING);
-                }
 
-                if (direction == Direction.NORTH) {
-                    BlockPos logPos = entity.worldPosition.above().north();
-                    logBlock = level.getBlockState(logPos).getBlock();
-
-                }
-                if (direction == Direction.SOUTH) {
-                    BlockPos logPos = entity.worldPosition.above().south();
-                    logBlock = level.getBlockState(logPos).getBlock();
-
-                }
-                if (direction == Direction.EAST) {
-                    BlockPos logPos = entity.worldPosition.above().east();
-                    logBlock = level.getBlockState(logPos).getBlock();
-
-                }
-                if (direction == Direction.WEST) {
-                    BlockPos logPos = entity.worldPosition.above().west();
-                    logBlock = level.getBlockState(logPos).getBlock();
-
-                }
+        if (match.isPresent()){
+            if (blockAbove.getValue(BlockStateProperties.POWERED)) {
+                return match.filter(currentRecipe ->
+                        hasInputItem(entity, currentRecipe)
+                                && canInsertItemIntoOutputSlot(inventory, currentRecipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess()))
+                                && hasOutputSpaceMakingSoaking(entity, currentRecipe)
+                                && hasDuration(currentRecipe)).isPresent();
             }
-
-
-            if (match.isPresent()){
-                    if (logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(match.get().getConnectedTapBlock()))) {
-                        if (blockAbove.getValue(BlockStateProperties.POWERED)) {
-                            return match.filter(currentRecipe ->
-                                    hasInputItem(entity, currentRecipe)
-                                            && canInsertItemIntoOutputSlot(inventory, currentRecipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess()))
-                                            && hasOutputSpaceMakingSoaking(entity, currentRecipe)
-                                            && hasDuration(currentRecipe)).isPresent();
-                        }
-                    }
-
-
-            }
+        }
 
 
         return false;
+    }
+
+    private Block getLogBlock(SapTableBlockEntity entity) {
+        Block logBlock = null;
+        BlockPos blockPos = entity.worldPosition.above(1);
+        BlockState blockAbove = level.getBlockState(blockPos);
+        Direction direction = blockAbove.getValue(BlockStateProperties.HORIZONTAL_FACING);
+
+        if (direction == Direction.NORTH) {
+            BlockPos logPos = entity.worldPosition.above().north();
+            logBlock = level.getBlockState(logPos).getBlock();
+
+        }
+        if (direction == Direction.SOUTH) {
+            BlockPos logPos = entity.worldPosition.above().south();
+            logBlock = level.getBlockState(logPos).getBlock();
+
+        }
+        if (direction == Direction.EAST) {
+            BlockPos logPos = entity.worldPosition.above().east();
+            logBlock = level.getBlockState(logPos).getBlock();
+
+        }
+        if (direction == Direction.WEST) {
+            BlockPos logPos = entity.worldPosition.above().west();
+            logBlock = level.getBlockState(logPos).getBlock();
+
+        }
+
+        return logBlock;
     }
 
 
@@ -418,8 +414,14 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
                 inventory.setItem(i, entity.itemHandler.getStackInSlot(i));
             }
 
+            Block logBlock = getLogBlock(entity);
             Optional<SapTableRecipe> match = level.getRecipeManager()
-                    .getRecipeFor(SapTableRecipe.Type.INSTANCE, inventory, level);
+                    .getAllRecipesFor(SapTableRecipe.Type.INSTANCE)
+                    .stream()
+                    .filter(e -> {
+                        return e.matches(inventory, level) && logBlock != null && logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(e.getConnectedTapBlock()));
+                    })
+                    .findAny();
 
             if (match.isPresent()) {
 

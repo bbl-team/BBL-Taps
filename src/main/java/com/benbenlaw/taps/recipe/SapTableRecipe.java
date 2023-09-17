@@ -42,7 +42,7 @@ public class SapTableRecipe implements Recipe<SimpleContainer> {
         if(inputItem.get(0).test(pContainer.getItem(1))) {
             return duration >= 0;
         }
-        return true;
+        return false;
     }
 
     @Override
