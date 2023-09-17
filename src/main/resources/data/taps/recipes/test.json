@@ -1,0 +1,13 @@
+{
+  "type": "taps:sap_table",
+  "ingredients": [
+    {
+        "item": "minecraft:stick"
+    }
+  ],
+  "duration": 400,
+  "output": {
+    "item": "minecraft:andesite"
+  },
+  "connectedTapBlock": "minecraft:birch_log"
+}
