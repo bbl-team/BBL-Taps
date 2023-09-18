@@ -4,7 +4,6 @@ import com.benbenlaw.opolisutilities.block.entity.IInventoryHandlingBlockEntity;
 import com.benbenlaw.opolisutilities.block.entity.custom.WrappedHandler;
 import com.benbenlaw.opolisutilities.networking.ModMessages;
 import com.benbenlaw.opolisutilities.networking.packets.PacketSyncItemStackToClient;
-import com.benbenlaw.opolisutilities.recipe.NoInventoryRecipe;
 import com.benbenlaw.taps.block.ModBlocks;
 import com.benbenlaw.taps.recipe.SapTableRecipe;
 import com.benbenlaw.taps.screen.SapTableMenu;
@@ -14,7 +13,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
@@ -25,6 +23,7 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -34,16 +33,13 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class SapTableBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
 
@@ -135,8 +131,8 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
     public final ContainerData data;
     private int progress = 0;
     private int maxProgress = 80;
-
     private long lastExecutionTime = 0;
+    private SapTableRecipe cachedRecipe;
 
     private final FluidTank FLUID_TANK = createFluidTank();
 
@@ -269,15 +265,23 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
         BlockState pState = pLevel.getBlockState(pPos);
         SapTableBlockEntity pBlockEntity = this;
 
-        if (hasRecipe(pBlockEntity)) {
-            pBlockEntity.progress++;
-            setChanged(pLevel, pPos, pState);
-            if (pBlockEntity.progress > pBlockEntity.maxProgress) {
-                craftItem(pBlockEntity);
+
+        if (!level.isClientSide) {
+            Block block = getLogBlock(pBlockEntity);
+            if (cachedRecipe != null && !cachedRecipe.matches(pBlockEntity.itemHandler.getStackInSlot(1), block, level))
+                cachedRecipe = null;
+            if (cachedRecipe == null)
+                cachedRecipe = getRecipe(pBlockEntity);
+
+            if (cachedRecipe != null) {
+                pBlockEntity.progress++;
+                setChanged(pLevel, pPos, pState);
+                if (pBlockEntity.progress > pBlockEntity.maxProgress)
+                    craftItem(pBlockEntity);
+            } else {
+                pBlockEntity.resetProgress();
+                setChanged(pLevel, pPos, pState);
             }
-        } else {
-            pBlockEntity.resetProgress();
-            setChanged(pLevel, pPos, pState);
         }
 
         //Particle
@@ -317,7 +321,7 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
         }
     }
 
-    private boolean hasRecipe(@NotNull SapTableBlockEntity entity) {
+    private SapTableRecipe getRecipe(@NotNull SapTableBlockEntity entity) {
         Level level = entity.level;
         SimpleContainer inventory = new SimpleContainer(entity.itemHandler.getSlots());
         for (int i = 0; i < entity.itemHandler.getSlots(); i++) {
@@ -328,16 +332,15 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
         BlockPos blockPos = entity.worldPosition.above(1);
         BlockState blockAbove = level.getBlockState(blockPos);
 
-        if (!blockAbove.is(ModBlocks.TAP.get()))
-            return false;
-
         Block logBlock = getLogBlock(entity);
+        if (logBlock == Blocks.AIR)
+            return null;
 
         Optional<SapTableRecipe> match = level.getRecipeManager()
                 .getAllRecipesFor(SapTableRecipe.Type.INSTANCE)
                 .stream()
                 .filter(e -> {
-                    return e.matches(inventory, level) && logBlock != null && logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(e.getConnectedTapBlock()));
+                    return e.matches(entity.itemHandler.getStackInSlot(1), logBlock, level);
                 })
                 .findAny();
 
@@ -348,18 +351,22 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
                         hasInputItem(entity, currentRecipe)
                                 && canInsertItemIntoOutputSlot(inventory, currentRecipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess()))
                                 && hasOutputSpaceMakingSoaking(entity, currentRecipe)
-                                && hasDuration(currentRecipe)).isPresent();
+                                && hasDuration(currentRecipe)).orElse(null);
             }
         }
 
 
-        return false;
+        return null;
     }
 
     private Block getLogBlock(SapTableBlockEntity entity) {
         Block logBlock = null;
         BlockPos blockPos = entity.worldPosition.above(1);
         BlockState blockAbove = level.getBlockState(blockPos);
+
+        if (!blockAbove.is(ModBlocks.TAP.get()))
+            return Blocks.AIR;
+
         Direction direction = blockAbove.getValue(BlockStateProperties.HORIZONTAL_FACING);
 
         if (direction == Direction.NORTH) {
@@ -393,14 +400,10 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
 
     private boolean hasInputItem(@NotNull SapTableBlockEntity entity, @NotNull SapTableRecipe recipe) {
 
-        ItemStack[] items = recipe.getIngredients().get(0).getItems();
+        ItemStack castItem = recipe.getCastItem();
         ItemStack slotItem = entity.itemHandler.getStackInSlot(1);
-        for (ItemStack item : items) {
-            if (ItemStack.isSameItem(item, slotItem)) {
-                return true;
-            }
-        }
-        return false;
+
+        return slotItem.is(castItem.getItem());
     }
 
     private void craftItem(@NotNull SapTableBlockEntity entity) {
@@ -415,11 +418,14 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
             }
 
             Block logBlock = getLogBlock(entity);
+            if (logBlock == Blocks.AIR)
+                return;
+
             Optional<SapTableRecipe> match = level.getRecipeManager()
                     .getAllRecipesFor(SapTableRecipe.Type.INSTANCE)
                     .stream()
                     .filter(e -> {
-                        return e.matches(inventory, level) && logBlock != null && logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(e.getConnectedTapBlock()));
+                        return e.matches(entity.itemHandler.getStackInSlot(1), logBlock, level);
                     })
                     .findAny();
 

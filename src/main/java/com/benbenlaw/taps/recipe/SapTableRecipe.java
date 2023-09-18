@@ -9,39 +9,40 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
 public class SapTableRecipe implements Recipe<SimpleContainer> {
 
     private final ResourceLocation id;
     private final ItemStack output;
-    private final NonNullList<Ingredient> inputItem;
+    private final ItemStack castItem;
     private final int duration;
     private final String connectedTapBlock;
 
-    public SapTableRecipe(ResourceLocation id, ItemStack output, NonNullList<Ingredient> inputItem,
-                          int duration, String connectedTapBlock) {
+    public SapTableRecipe(ResourceLocation id, ItemStack output, ItemStack castItem, int duration, String connectedTapBlock) {
 
         this.id = id;
         this.output = output;
-        this.inputItem = inputItem;
+        this.castItem = castItem;
         this.duration = duration;
         this.connectedTapBlock = connectedTapBlock;
 
     }
 
-    @Override
-    public boolean matches(@NotNull SimpleContainer pContainer, @NotNull Level pLevel) {
+    public boolean matches(@NotNull ItemStack castItem, Block logBlock, @NotNull Level pLevel) {
         if (pLevel.isClientSide()) {
             return false;
         }
 
-        if(inputItem.get(0).test(pContainer.getItem(1))) {
-            return duration >= 0;
-        }
+        if (castItem.is(this.castItem.getItem()) && logBlock == ForgeRegistries.BLOCKS.getValue(new ResourceLocation(connectedTapBlock)))
+            return duration > 0;
+
         return false;
     }
 
@@ -55,6 +56,15 @@ public class SapTableRecipe implements Recipe<SimpleContainer> {
         return output.copy();
     }
 
+    public ItemStack getCastItem() {
+        return castItem.copy();
+    }
+
+    @Override
+    public boolean matches(SimpleContainer p_44002_, Level p_44003_) {
+        return false;
+    }
+
     @Override
     public ItemStack assemble(SimpleContainer p_44001_, RegistryAccess p_267165_) {
         return output;
@@ -63,11 +73,6 @@ public class SapTableRecipe implements Recipe<SimpleContainer> {
 
     public int getDuration() {
         return duration;
-    }
-
-    @Override
-    public NonNullList<Ingredient> getIngredients() {
-        return inputItem;
     }
 
     public String getConnectedTapBlock() {
@@ -108,44 +113,30 @@ public class SapTableRecipe implements Recipe<SimpleContainer> {
         @Override
         public SapTableRecipe fromJson(ResourceLocation id, JsonObject json) {
             ItemStack output = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "output"));
-
-            JsonArray ingredients = GsonHelper.getAsJsonArray(json, "ingredients");
-            NonNullList<Ingredient> inputs = NonNullList.withSize(ingredients.size(), Ingredient.EMPTY);
-            for (int i = 0; i < ingredients.size(); i++) {
-                inputs.set(i, Ingredient.fromJson(ingredients.get(i)));
-            }
+            ItemStack castItem = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "castItem"));
 
             int duration = GsonHelper.getAsInt(json, "duration", 200);
             String connectedTapBlock = GsonHelper.getAsString(json, "connectedTapBlock", "minecraft:oak_log");
 
-            return new SapTableRecipe(id, output, inputs, duration, connectedTapBlock);
+            return new SapTableRecipe(id, output, castItem, duration, connectedTapBlock);
 
         }
 
         @Override
         public SapTableRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
             ItemStack output = buf.readItem();
-
-            NonNullList<Ingredient> inputs = NonNullList.withSize(buf.readInt(), Ingredient.EMPTY);
-            for (int i = 0; i < inputs.size(); i++) {
-                inputs.set(i, Ingredient.fromNetwork(buf));
-            }
+            ItemStack castItem = buf.readItem();
 
             int duration = buf.readInt();
             String connectedTapBlock = buf.readUtf(Short.MAX_VALUE);
 
-            return new SapTableRecipe(id, output, inputs, duration, connectedTapBlock);
+            return new SapTableRecipe(id, output, castItem, duration, connectedTapBlock);
         }
 
         @Override
         public void toNetwork(FriendlyByteBuf buf, SapTableRecipe recipe) {
             buf.writeItemStack(recipe.output, false);
-
-            buf.writeInt(recipe.getIngredients().size());
-
-            for (Ingredient ing : recipe.getIngredients()) {
-                ing.toNetwork(buf);
-            }
+            buf.writeItemStack(recipe.castItem, false);
 
             buf.writeInt(recipe.getDuration());
             buf.writeUtf(recipe.getConnectedTapBlock(), Short.MAX_VALUE);

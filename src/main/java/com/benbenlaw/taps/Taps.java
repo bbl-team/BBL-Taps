@@ -9,6 +9,7 @@ import com.benbenlaw.taps.item.ModItems;
 import com.benbenlaw.taps.screen.SapTableMenu;
 import com.benbenlaw.taps.screen.SapTableScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -37,7 +38,6 @@ public class Taps {
         ModBlockEntities.register(eventBus);
         ModMenuTypes.register(eventBus);
         ModRecipes.register(eventBus);
-
         eventBus.addListener(this::commonSetup);
 
         MinecraftForge.EVENT_BUS.register(this);
