@@ -428,10 +428,15 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
                 entity.itemHandler.extractItem(1, 1, false);
                 assert Minecraft.getInstance().level != null;
 
+                ItemStack remaining = new ItemStack(match.get().getResultItem(Objects.requireNonNull(getLevel()).registryAccess()).getItem());
                 for (int i = 2; i <= 26; i++) {
-                    entity.itemHandler.setStackInSlot(i, new ItemStack(match.get().getResultItem(Objects.requireNonNull(getLevel()).registryAccess()).getItem(),
-                            entity.itemHandler.getStackInSlot(i).getCount() + 1));
-                    break;
+                    remaining = entity.itemHandler.insertItem(
+                            i,
+                            remaining,
+                            false
+                    );
+                    if (remaining.isEmpty())
+                        break;
                 }
 
                 entity.resetProgress();
@@ -446,13 +451,30 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
     }
 
     private boolean canInsertItemIntoOutputSlot(SimpleContainer inventory, ItemStack output) {
-        return inventory.getItem(3).getItem() == output.getItem() || inventory.getItem(3).isEmpty();
+        boolean empty = false;
+
+        for (int i =3 ; i < inventory.getContainerSize(); i++)
+            if (inventory.getItem(i).isEmpty()) {
+                empty = true;
+                break;
+            }
+
+        return inventory.getItem(3).getItem() == output.getItem() || empty;
     }
 
     private boolean hasOutputSpaceMakingSoaking(SapTableBlockEntity entity, SapTableRecipe recipe) {
         assert Minecraft.getInstance().level != null;
-        return entity.itemHandler.getStackInSlot(3).getCount() + recipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess()).getCount() - 1 <
-                entity.itemHandler.getStackInSlot(3).getMaxStackSize();
+
+        boolean result = false;
+        for (int i = 3; i < entity.itemHandler.getSlots(); i++) {
+            result = entity.itemHandler.getStackInSlot(i).getCount() + recipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess()).getCount() - 1 <
+                    entity.itemHandler.getStackInSlot(i).getMaxStackSize();
+            if (result)
+                break;
+        }
+
+
+        return result;
     }
 
 }
