@@ -5,6 +5,7 @@ import com.benbenlaw.opolisutilities.block.entity.custom.WrappedHandler;
 import com.benbenlaw.opolisutilities.networking.ModMessages;
 import com.benbenlaw.opolisutilities.networking.packets.PacketSyncItemStackToClient;
 import com.benbenlaw.taps.block.ModBlocks;
+import com.benbenlaw.taps.item.custom.UpgradeItem;
 import com.benbenlaw.taps.recipe.SapTableRecipe;
 import com.benbenlaw.taps.screen.SapTableMenu;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -274,6 +276,7 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
                 cachedRecipe = getRecipe(pBlockEntity);
 
             if (cachedRecipe != null) {
+                maxProgress = (int) (cachedRecipe.getDuration() - (cachedRecipe.getDuration() * getSpeedUpgradeEffect(itemHandler.getStackInSlot(0))));
                 pBlockEntity.progress++;
                 setChanged(pLevel, pPos, pState);
                 if (pBlockEntity.progress > pBlockEntity.maxProgress)
@@ -393,6 +396,12 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
         return logBlock;
     }
 
+    public double getSpeedUpgradeEffect(ItemStack stack) {
+        if (stack.getItem() instanceof UpgradeItem upgradeItem)
+            return upgradeItem.getTimeEffect();
+        return 0;
+    }
+
 
     private boolean hasDuration(SapTableRecipe recipe) {
         return 0 <= recipe.getDuration();
@@ -435,7 +444,7 @@ public class SapTableBlockEntity extends BlockEntity implements MenuProvider, II
                 assert Minecraft.getInstance().level != null;
 
                 ItemStack remaining = new ItemStack(match.get().getResultItem(Objects.requireNonNull(getLevel()).registryAccess()).getItem());
-                for (int i = 2; i <= 26; i++) {
+                for (int i = 2; i < 26; i++) {
                     remaining = entity.itemHandler.insertItem(
                             i,
                             remaining,

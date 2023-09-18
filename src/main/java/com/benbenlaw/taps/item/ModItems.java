@@ -2,6 +2,7 @@ package com.benbenlaw.taps.item;
 
 
 import com.benbenlaw.taps.Taps;
+import com.benbenlaw.taps.item.custom.UpgradeItem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -67,7 +68,10 @@ public class ModItems {
     public static final RegistryObject<Item> WOODEN_SAP_CAST = ITEMS.register("wooden_sap_cast",
             () -> new Item(new Item.Properties()));
 
-
+    public static final RegistryObject<Item> BASIC_SPEED_UPGRADE = ITEMS.register("basic_speed_upgrade",
+            () -> new UpgradeItem(new Item.Properties().stacksTo(1), 0.2));
+    public static final RegistryObject<Item> CREATIVE_SPEED_UPGRADE = ITEMS.register("creative_speed_upgrade",
+            () -> new UpgradeItem(new Item.Properties().stacksTo(1), 0.999));
 
 
 
