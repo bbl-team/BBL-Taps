@@ -127,8 +127,8 @@ dependencies {
 
     //Opolis Utilities
 
-    compileOnly fg.deobf("curse.maven:opolis-utilities-649644:4653445")
-    runtimeOnly fg.deobf("curse.maven:opolis-utilities-649644:4653445")
+    compileOnly fg.deobf("curse.maven:opolis-utilities-649644:4761705")
+    runtimeOnly fg.deobf("curse.maven:opolis-utilities-649644:4761705")
     runtimeOnly fg.deobf("curse.maven:caveopolis-639186:4754487")
 
 

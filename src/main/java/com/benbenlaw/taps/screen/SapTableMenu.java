@@ -1,6 +1,6 @@
 package com.benbenlaw.taps.screen;
 
-import com.benbenlaw.opolisutilities.screen.slot.ModResultSlot;
+import com.benbenlaw.opolisutilities.screen.slot.utils.ModResultSlot;
 import com.benbenlaw.taps.block.ModBlocks;
 import com.benbenlaw.taps.block.entity.SapTableBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
